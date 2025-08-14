@@ -6,7 +6,7 @@
 パーソナライズされた節約のヒントを提案するウェブアプリケーションです。
 面倒な家計簿付けを、もっとスマートに、もっと楽しく。
 
-<img src="cap1.jpg" width="30%">
+<img src="https://github.com/S-okubomy/account-book/blob/main/cap1.jpg" width="30%">
 *(スクリーンショットはイメージです。)*
 
 ## 🌐 デモサイト
