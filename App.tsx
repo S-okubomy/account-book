@@ -1,24 +1,23 @@
-
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { Expense, Category, Income } from './types';
-import { ExpenseModal } from './components/ExpenseModal';
-import { IncomeModal } from './components/IncomeModal';
-import { AIAssistant } from './components/AIAssistant';
-import { ReceiptScannerModal } from './components/ReceiptScannerModal';
-import { SalesInfo } from './components/SalesInfo';
-import { analyzeReceipt } from './services/geminiService';
+import { Category } from './types.ts';
+import { ExpenseModal } from './components/ExpenseModal.tsx';
+import { IncomeModal } from './components/IncomeModal.tsx';
+import { AIAssistant } from './components/AIAssistant.tsx';
+import { ReceiptScannerModal } from './components/ReceiptScannerModal.tsx';
+import { SalesInfo } from './components/SalesInfo.tsx';
+import { analyzeReceipt } from './services/geminiService.ts';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import { marked } from 'marked';
 
-const App: React.FC = () => {
-  const [expenses, setExpenses] = useState<Expense[]>([]);
+const App = () => {
+  const [expenses, setExpenses] = useState([]);
   const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
-  const [expenseToEdit, setExpenseToEdit] = useState<Expense | null>(null);
-  const [expenseInitialData, setExpenseInitialData] = useState<Partial<Omit<Expense, 'id'>> | null>(null);
+  const [expenseToEdit, setExpenseToEdit] = useState(null);
+  const [expenseInitialData, setExpenseInitialData] = useState(null);
 
-  const [incomes, setIncomes] = useState<Income[]>([]);
+  const [incomes, setIncomes] = useState([]);
   const [isIncomeModalOpen, setIsIncomeModalOpen] = useState(false);
-  const [incomeToEdit, setIncomeToEdit] = useState<Income | null>(null);
+  const [incomeToEdit, setIncomeToEdit] = useState(null);
 
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [isProcessingReceipt, setIsProcessingReceipt] = useState(false);
@@ -52,21 +51,21 @@ const App: React.FC = () => {
     }
   }, [incomes]);
 
-  const handleAddExpense = useCallback((expenseData: Omit<Expense, 'id'>) => {
-    const newExpense: Expense = { ...expenseData, id: new Date().getTime().toString() };
+  const handleAddExpense = useCallback((expenseData) => {
+    const newExpense = { ...expenseData, id: new Date().getTime().toString() };
     setExpenses(prev => [...prev, newExpense].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
   }, []);
   
-  const handleUpdateExpense = useCallback((expenseData: Omit<Expense, 'id'>) => {
+  const handleUpdateExpense = useCallback((expenseData) => {
     if (!expenseToEdit) return;
     setExpenses(prev => prev.map(exp => exp.id === expenseToEdit.id ? { ...exp, ...expenseData } : exp).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
   }, [expenseToEdit]);
 
-  const handleDeleteExpense = (id: string) => {
+  const handleDeleteExpense = (id) => {
     setExpenses(expenses.filter(expense => expense.id !== id));
   };
   
-  const openEditExpenseModal = (expense: Expense) => {
+  const openEditExpenseModal = (expense) => {
     setExpenseToEdit(expense);
     setIsExpenseModalOpen(true);
   };
@@ -83,21 +82,21 @@ const App: React.FC = () => {
     setExpenseToEdit(null);
   }
 
-  const handleAddIncome = useCallback((incomeData: Omit<Income, 'id'>) => {
-    const newIncome: Income = { ...incomeData, id: new Date().getTime().toString() };
+  const handleAddIncome = useCallback((incomeData) => {
+    const newIncome = { ...incomeData, id: new Date().getTime().toString() };
     setIncomes(prev => [...prev, newIncome].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
   }, []);
 
-  const handleUpdateIncome = useCallback((incomeData: Omit<Income, 'id'>) => {
+  const handleUpdateIncome = useCallback((incomeData) => {
     if (!incomeToEdit) return;
     setIncomes(prev => prev.map(inc => inc.id === incomeToEdit.id ? { ...inc, ...incomeData } : inc).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
   }, [incomeToEdit]);
 
-  const handleDeleteIncome = (id: string) => {
+  const handleDeleteIncome = (id) => {
     setIncomes(incomes.filter(income => income.id !== id));
   };
 
-  const openEditIncomeModal = (income: Income) => {
+  const openEditIncomeModal = (income) => {
     setIncomeToEdit(income);
     setIsIncomeModalOpen(true);
   };
@@ -107,7 +106,7 @@ const App: React.FC = () => {
     setIsIncomeModalOpen(true);
   };
 
-  const handleReceiptCapture = useCallback(async (imageData: string) => {
+  const handleReceiptCapture = useCallback(async (imageData) => {
     setIsProcessingReceipt(true);
     try {
         const base64Data = imageData.split(',')[1];
@@ -117,7 +116,7 @@ const App: React.FC = () => {
         setIsExpenseModalOpen(true);
     } catch (error) {
         console.error(error);
-        alert((error as Error).message || "レシートの解析中にエラーが発生しました。");
+        alert((error).message || "レシートの解析中にエラーが発生しました。");
     } finally {
         setIsProcessingReceipt(false);
     }
@@ -170,7 +169,7 @@ const App: React.FC = () => {
     const totalIncome = filteredIncomes.reduce((sum, income) => sum + income.amount, 0);
     const balance = totalIncome - totalSpent;
 
-    const categoryMap = new Map<Category, number>();
+    const categoryMap = new Map();
     filteredExpenses.forEach(expense => {
       const currentAmount = categoryMap.get(expense.category) || 0;
       categoryMap.set(expense.category, currentAmount + expense.amount);
@@ -189,7 +188,7 @@ const App: React.FC = () => {
   
   const COLORS = ['#0d9488', '#0891b2', '#0ea5e9', '#6366f1', '#8b5cf6', '#a855f7', '#d946ef', '#ec4899'];
 
-  const categoryIcons: Record<Category, React.ReactNode> = {
+  const categoryIcons = {
     [Category.Food]: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M18.333 7.825c0-3.321-2.612-4.25-3.083-4.325a.833.833 0 00-.917.917c.017.25.167.833.167 1.417 0 .583-.15 1.167-.167 1.417a.833.833 0 00.917.917c.471-.075 3.083-1 3.083-4.325zM1.667 7.825c0-3.321 2.612-4.25 3.083-4.325a.833.833 0 01.917.917c-.017.25-.167.833-.167 1.417 0 .583.15 1.167.167 1.417a.833.833 0 01-.917.917C4.279 8.825 1.667 8.825 1.667 7.825z" /><path fillRule="evenodd" d="M10 2a8 8 0 100 16 8 8 0 000-16zM5.885 6.512a.833.833 0 01.954-.616c.38.117.953.334 1.542.334s1.162-.217 1.542-.334a.833.833 0 11.568 1.232c-.471.217-.953.488-1.722.488s-1.251-.271-1.722-.488a.833.833 0 01-.662-1.048zM14 11.5a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" /></svg>,
     [Category.Transport]: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M18 6.5a.5.5 0 00-.5-.5h-2a.5.5 0 000 1h2a.5.5 0 00.5-.5zM12.879 6.5a.5.5 0 00-.5.5v2a.5.5 0 001 0v-2a.5.5 0 00-.5-.5zM10 6.5a.5.5 0 00-.5.5v2a.5.5 0 101 0v-2a.5.5 0 00-.5-.5zM7.121 6.5a.5.5 0 00-.5.5v2a.5.5 0 101 0v-2a.5.5 0 00-.5-.5zM5 7.5a.5.5 0 01.5-.5h2a.5.5 0 010 1h-2a.5.5 0 01-.5-.5zM2 9.5A.5.5 0 012.5 9h15a.5.5 0 010 1h-15a.5.5 0 01-.5-.5z" clipRule="evenodd" /><path d="M16 3.5A2.5 2.5 0 0013.5 1h-7A2.5 2.5 0 004 3.5v11A2.5 2.5 0 006.5 17h7a2.5 2.5 0 002.5-2.5v-11zM6.5 2a1.5 1.5 0 011.5-1.5h3A1.5 1.5 0 0112.5 2v1h-7V2zM5 14.5A1.5 1.5 0 016.5 13h7a1.5 1.5 0 011.5 1.5v1a1.5 1.5 0 01-1.5 1.5h-7A1.5 1.5 0 015 15.5v-1z" /></svg>,
     [Category.Shopping]: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M11 3a1 1 0 10-2 0v1h2V3zM15.5 5A1.5 1.5 0 0014 3.5h-1.528A3.001 3.001 0 0010 1 3.001 3.001 0 007.528 3.5H6A1.5 1.5 0 004.5 5v1.5a.5.5 0 001 0V5a.5.5 0 01.5-.5h8a.5.5 0 01.5.5v1.5a.5.5 0 001 0V5z" /><path fillRule="evenodd" d="M4.5 7a.5.5 0 01.5.5v9a.5.5 0 01-.5.5h-2a.5.5 0 01-.5-.5v-9a.5.5 0 01.5-.5h2zM15.5 7a.5.5 0 01.5.5v9a.5.5 0 01-.5.5h-2a.5.5 0 01-.5-.5v-9a.5.5 0 01.5-.5h2zM8.5 7a.5.5 0 01.5.5v9a.5.5 0 01-.5.5h-2a.5.5 0 01-.5-.5v-9a.5.5 0 01.5-.5h2z" clipRule="evenodd" /></svg>,
@@ -200,11 +199,11 @@ const App: React.FC = () => {
     [Category.Other]: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M5 4a2 2 0 012-2h6a2 2 0 012 2v1h-1V4a1 1 0 00-1-1H7a1 1 0 00-1 1v1H5V4zM3 7a2 2 0 012-2h10a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" /></svg>,
   };
   
-  const formatMarkdown = (text: string): { __html: string } => {
+  const formatMarkdown = (text) => {
     if (!text) {
       return { __html: '' };
     }
-    const html = marked.parse(text, { gfm: true, breaks: true, async: false }) as string;
+    const html = marked.parse(text, { gfm: true, breaks: true, async: false });
     return { __html: html };
   };
 
@@ -329,7 +328,7 @@ const App: React.FC = () => {
                                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                                     ))}
                                 </Pie>
-                                <Tooltip formatter={(value: number) => `${value.toLocaleString('ja-JP')}円`} />
+                                <Tooltip formatter={(value) => `${value.toLocaleString('ja-JP')}円`} />
                                 <Legend />
                             </PieChart>
                         </ResponsiveContainer>
@@ -349,7 +348,7 @@ const App: React.FC = () => {
             <ul className="space-y-1 list-inside list-disc text-left max-w-md mx-auto">
                 <li>本アプリのデータは、お使いのブラウザ内にのみ保存されます。他のデバイスとの同期はされず、キャッシュを削除するとデータが消えることがあります。</li>
                 <li>レシートの読み取り結果は100%の精度を保証するものではありません。保存前に必ずご自身で内容の確認・修正をお願いします。</li>
-                <li>AIによるヒントの取得やレシート分析機能のご利用には、インターネット接続が必要です。</li>
+                <li>AIによるヒントの取得やレシート分析機能のご利用には、APIキーの設定とインターネット接続が必要です。</li>
             </ul>
         </footer>
       </div>

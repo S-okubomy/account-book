@@ -1,15 +1,31 @@
 import { GoogleGenAI, Type } from "@google/genai";
-import { Expense, Income, Category } from '../types';
+import { Category } from '../types.ts';
 
-if (!process.env.API_KEY) {
-  // In a real app, you'd want to handle this more gracefully.
-  // For this context, we will log an error to the console.
-  console.error("API_KEY environment variable not set.");
+let ai;
+let apiKeyError = '';
+
+try {
+  // In a browser environment without a build step, process.env will not be defined.
+  // This will throw a ReferenceError, which we catch.
+  if (typeof process !== 'undefined' && process.env && process.env.API_KEY) {
+    ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  } else {
+    apiKeyError = "APIキーが設定されていません。";
+    console.warn(apiKeyError);
+  }
+} catch (e) {
+  apiKeyError = "APIキーを環境から読み込めませんでした。";
+  console.warn(apiKeyError, "This is expected in a browser-only environment.");
 }
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });
+const unavailableError = (feature) => `AIによる${feature}機能は現在利用できません。APIキーが正しく設定されていない可能性があります。`;
 
-export async function getSavingsTips(expenses: Expense[], incomes: Income[], currentMonth: Date): Promise<string> {
+export async function getSavingsTips(expenses, incomes, currentMonth) {
+  if (!ai) {
+    console.error(apiKeyError);
+    return Promise.resolve(unavailableError("節約のヒント生成"));
+  }
+
   const monthString = `${currentMonth.getFullYear()}年${currentMonth.getMonth() + 1}月`;
   
   if ((!expenses || expenses.length === 0) && (!incomes || incomes.length === 0)) {
@@ -55,11 +71,16 @@ export async function getSavingsTips(expenses: Expense[], incomes: Income[], cur
     return response.text;
   } catch (error) {
     console.error("Error fetching savings tips from Gemini API:", error);
-    return "すみません、今ちょっとヒントを考えるのに苦労しています。APIキーの設定を確認して、後でもう一度お試しください。";
+    return "すみません、今ちょっとヒントを考えるのに苦労しています。後でもう一度お試しください。";
   }
 }
 
-export async function analyzeReceipt(base64Image: string): Promise<Partial<Omit<Expense, 'id'>>> {
+export async function analyzeReceipt(base64Image) {
+  if (!ai) {
+     console.error(apiKeyError);
+     return Promise.reject(new Error(unavailableError("レシート分析")));
+  }
+
   const imagePart = {
     inlineData: {
       mimeType: 'image/jpeg',
@@ -104,8 +125,7 @@ export async function analyzeReceipt(base64Image: string): Promise<Partial<Omit<
     const jsonText = response.text.trim();
     const parsedData = JSON.parse(jsonText);
 
-    // Validate category
-    if (!Object.values(Category).includes(parsedData.category as Category)) {
+    if (!Object.values(Category).includes(parsedData.category)) {
         parsedData.category = Category.Other;
     }
 
@@ -116,22 +136,14 @@ export async function analyzeReceipt(base64Image: string): Promise<Partial<Omit<
   }
 }
 
-interface GroundingChunk {
-  web: {
-    uri: string;
-    title?: string;
-  };
-}
+export async function getSalesInfo(location) {
+   if (!ai) {
+      console.error(apiKeyError);
+      return Promise.resolve({ text: unavailableError("セール情報検索"), sources: [] });
+   }
 
-interface LocationInput {
-  latitude?: number;
-  longitude?: number;
-  address?: string;
-}
-
-export async function getSalesInfo(location: LocationInput): Promise<{ text: string; sources: GroundingChunk[] }> {
-  let locationInfo: string;
-  let locationContext: string;
+  let locationInfo;
+  let locationContext;
 
   if (location.address) {
     locationInfo = `【検索場所】\n${location.address}`;
@@ -171,12 +183,12 @@ export async function getSalesInfo(location: LocationInput): Promise<{ text: str
 
     const groundingChunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks ?? [];
     
-    const sources: GroundingChunk[] = groundingChunks
+    const sources = groundingChunks
       .filter(chunk => chunk.web?.uri)
       .map(chunk => ({
         web: {
-          uri: chunk.web!.uri!,
-          title: chunk.web!.title,
+          uri: chunk.web.uri,
+          title: chunk.web.title,
         }
       }));
 

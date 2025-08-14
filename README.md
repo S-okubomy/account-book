@@ -1,20 +1,91 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# 簡単家計簿 - AI搭載の家計簿アプリ
 
-# Run and deploy your AI Studio app
+***注: このREADME.mdは生成AIによって自動生成されました。***
 
-This contains everything you need to run your app locally.
+「簡単家計簿」は、日々の支出と収入を簡単に記録し、AIアシスタントがあなたの消費行動を分析して、パーソナライズされた節約のヒントを提案するウェブアプリケーションです。面倒な家計簿付けを、もっとスマートに、もっと楽しく。
 
-View your app in AI Studio: https://ai.studio/apps/drive/1BFKpY3wE3eIpWy8KEQ1PPDoemz5URKmE
+![アプリのスクリーンショット](./screenshot.png) 
+*(スクリーンショットはイメージです。リポジトリに`screenshot.png`を追加してください)*
 
-## Run Locally
+## 🌐 デモサイト
+
+以下のリンクからアプリケーションを直接お試しいただけます。
+
+[https://service-938981889.us-west1.run.app/](https://service-938981889.us-west1.run.app/)
+
+## ✨ 主な機能
+
+- **ダッシュボード:** 月ごとの収入、支出、残高をひと目で確認できます。
+- **収入・支出の記録:** 簡単なフォーム入力で、日々の収入と支出を手軽に記録できます。
+- **データ編集・削除:** 記録した内容はいつでも修正・削除が可能です。
+- **月次ナビゲーション:** 前後の月に移動して、過去の家計状況を振り返ることができます。
+- **カテゴリ別支出分析:** 円グラフで、どのカテゴリにどれくらい使っているかを視覚的に把握できます。
+- **AIレシートスキャナー (Gemini API):** スマートフォンのカメラでレシートを撮影するだけで、日付、金額、カテゴリ、内容をAIが自動で読み取り、入力フォームに反映します。
+- **AI節約アドバイザー (Gemini API):** 記録されたデータに基づき、AIがあなたの家計に合わせた具体的な節約術を提案します。
+- **お買い得情報検索 (Gemini API with Google Search):** 現在地や指定した住所の周辺にあるスーパーの特売情報をAIが探し出します。
+- **ローカルストレージ:** データはすべてお使いのブラウザ内に保存されるため、サーバーへの登録は不要です。
+- **レスポンシブデザイン:** PCでもスマートフォンでも快適に利用できます。
+
+## 🛠️ 使用技術
+
+- **フロントエンド:**
+  - [React](https://reactjs.org/) (v18)
+  - [TypeScript](https://www.typescriptlang.org/) & JSX
+  - [Tailwind CSS](https://tailwindcss.com/)
+  - [Babel Standalone](https://babeljs.io/docs/en/babel-standalone) (ブラウザ内でのトランスパイル用)
+- **AI & API:**
+  - [Google Gemini API](https://ai.google.dev/) (`gemini-2.5-flash`)
+    - テキスト生成
+    - 画像認識（レシート分析）
+    - Google検索連携（特売情報）
+- **グラフ描画:**
+  - [Recharts](https://recharts.org/)
+- **その他:**
+  - [marked.js](https://marked.js.org/): AIが生成したMarkdownをHTMLに変換するために使用
+
+## 🚀 セットアップと実行方法
+
+### 前提条件
+
+- [Google Gemini APIキー](https://ai.google.dev/pricing)
+- ローカルWebサーバー (例: [http-server](https://www.npmjs.com/package/http-server))
+
+### Run Locally
 
 **Prerequisites:**  Node.js
-
+nvm install 18.17.0
+nvm use 18.17.0
+node -v
 
 1. Install dependencies:
    `npm install`
 2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
 3. Run the app:
    `npm run dev`
+
+4. ブラウザで、ターミナルに表示されたURLを開きます。
+
+## 使い方
+
+1. **収入・支出の追加:**
+   - 画面右下の「収入を追加」または「支出を追加」ボタンをクリックします。
+   - 金額、内容、日付などの情報を入力し、「保存」ボタンを押します。
+
+2. **レシートの読み取り:**
+   - 画面右下の「レシート読込」ボタンをクリックします。
+   - カメラが起動したら、レシート全体がはっきりと映るように撮影します。
+   - AIがレシートを分析し、支出登録フォームに結果が自動入力されます。内容を確認・修正して保存してください。
+
+3. **AIのヒントを見る:**
+   - 「あなたのAI節約先生」セクションの「AIのヒントを見る」ボタンをクリックします。
+   - その月の収入・支出データに基づいて、AIが節約に関するアドバイスを生成します。
+
+4. **お買い得情報を探す:**
+   - 「お買い得情報を探す」セクションで、現在地または住所を入力して検索します。
+   - AIが周辺のスーパーのセール情報を探し、結果を表示します。
+
+## ⚠️ 注意事項
+
+- **データ保存:** アプリケーションのデータは、お使いのブラウザのローカルストレージにのみ保存されます。キャッシュの削除や、異なるブラウザ、シークレットモードでの利用時にはデータが引き継がれません。
+- **APIキー:** 上述の通り、APIキーの管理にはご注意ください。
+- **AIの精度:** レシートの読み取り結果やAIによるヒントは、100%の正確性を保証するものではありません。特に支出を登録する際は、必ずご自身で内容の確認・修正をお願いします。

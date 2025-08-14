@@ -1,18 +1,10 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { Expense, Income } from '../types';
-import { getSavingsTips } from '../services/geminiService';
+import { getSavingsTips } from '../services/geminiService.ts';
 
-interface AIAssistantProps {
-  expenses: Expense[];
-  incomes: Income[];
-  currentMonth: Date;
-  formatMarkdown: (text: string) => { __html: string };
-}
-
-export const AIAssistant: React.FC<AIAssistantProps> = ({ expenses, incomes, currentMonth, formatMarkdown }) => {
-  const [tips, setTips] = useState<string>('');
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [error, setError] = useState<string>('');
+export const AIAssistant = ({ expenses, incomes, currentMonth, formatMarkdown }) => {
+  const [tips, setTips] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     setTips('');

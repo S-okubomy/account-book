@@ -1,26 +1,15 @@
 import React, { useState, useCallback } from 'react';
-import { getSalesInfo } from '../services/geminiService';
+import { getSalesInfo } from '../services/geminiService.ts';
 
-interface Source {
-  web: {
-    uri: string;
-    title?: string;
-  };
-}
+export const SalesInfo = ({ formatMarkdown }) => {
+  const [info, setInfo] = useState('');
+  const [sources, setSources] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [address, setAddress] = useState('');
+  const [loadingAction, setLoadingAction] = useState(null);
 
-interface SalesInfoProps {
-  formatMarkdown: (text: string) => { __html: string };
-}
-
-export const SalesInfo: React.FC<SalesInfoProps> = ({ formatMarkdown }) => {
-  const [info, setInfo] = useState<string>('');
-  const [sources, setSources] = useState<Source[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [error, setError] = useState<string>('');
-  const [address, setAddress] = useState<string>('');
-  const [loadingAction, setLoadingAction] = useState<'geo' | 'address' | null>(null);
-
-  const handleFetchByAddress = async (e: React.FormEvent) => {
+  const handleFetchByAddress = async (e) => {
     e.preventDefault();
     if (!address.trim()) {
       setError("住所やランドマークを入力してください。");
@@ -37,7 +26,7 @@ export const SalesInfo: React.FC<SalesInfoProps> = ({ formatMarkdown }) => {
       const result = await getSalesInfo({ address: address.trim() });
       setInfo(result.text);
       setSources(result.sources);
-    } catch (err: any) {
+    } catch (err) {
       setError(err.message || '予期せぬエラーが発生しました。');
       console.error(err);
     } finally {
@@ -65,7 +54,7 @@ export const SalesInfo: React.FC<SalesInfoProps> = ({ formatMarkdown }) => {
           const result = await getSalesInfo({ latitude, longitude });
           setInfo(result.text);
           setSources(result.sources);
-        } catch (err: any) {
+        } catch (err) {
           setError(err.message || '予期せぬエラーが発生しました。');
           console.error(err);
         } finally {

@@ -1,17 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Expense, Category } from '../types';
+import { Category } from '../types.ts';
 
-interface ExpenseModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onSave: (expense: Omit<Expense, 'id'>) => void;
-  expenseToEdit?: Expense | null;
-  initialData?: Partial<Omit<Expense, 'id'>> | null;
-}
-
-export const ExpenseModal: React.FC<ExpenseModalProps> = ({ isOpen, onClose, onSave, expenseToEdit, initialData }) => {
+export const ExpenseModal = ({ isOpen, onClose, onSave, expenseToEdit, initialData }) => {
   const [amount, setAmount] = useState('');
-  const [category, setCategory] = useState<Category>(Category.Food);
+  const [category, setCategory] = useState(Category.Food);
   const [description, setDescription] = useState('');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [error, setError] = useState('');
@@ -37,7 +29,7 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({ isOpen, onClose, onS
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
     const parsedAmount = parseFloat(amount);
     if (isNaN(parsedAmount) || parsedAmount <= 0) {
@@ -97,7 +89,7 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({ isOpen, onClose, onS
                 id="expense-category"
                 name="category"
                 value={category}
-                onChange={(e) => setCategory(e.target.value as Category)}
+                onChange={(e) => setCategory(e.target.value)}
                 className="mt-1 block w-full rounded-md border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white py-2 pl-3 pr-10 text-base focus:border-teal-500 focus:outline-none focus:ring-teal-500 sm:text-sm"
               >
                 {Object.values(Category).map(cat => (

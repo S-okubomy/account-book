@@ -1,14 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Income } from '../types';
 
-interface IncomeModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onSave: (income: Omit<Income, 'id'>) => void;
-  incomeToEdit?: Income | null;
-}
-
-export const IncomeModal: React.FC<IncomeModalProps> = ({ isOpen, onClose, onSave, incomeToEdit }) => {
+export const IncomeModal = ({ isOpen, onClose, onSave, incomeToEdit }) => {
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
@@ -24,11 +16,12 @@ export const IncomeModal: React.FC<IncomeModalProps> = ({ isOpen, onClose, onSav
       setDescription('');
       setDate(new Date().toISOString().split('T')[0]);
     }
+    setError('');
   }, [incomeToEdit, isOpen]);
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
     const parsedAmount = parseFloat(amount);
     if (isNaN(parsedAmount) || parsedAmount <= 0) {

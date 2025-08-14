@@ -1,15 +1,8 @@
 import React, { useRef, useEffect, useCallback } from 'react';
 
-interface ReceiptScannerModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onCapture: (imageData: string) => void;
-  isProcessing: boolean;
-}
-
-export const ReceiptScannerModal: React.FC<ReceiptScannerModalProps> = ({ isOpen, onClose, onCapture, isProcessing }) => {
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const streamRef = useRef<MediaStream | null>(null);
+export const ReceiptScannerModal = ({ isOpen, onClose, onCapture, isProcessing }) => {
+  const videoRef = useRef(null);
+  const streamRef = useRef(null);
 
   const cleanupCamera = useCallback(() => {
     if (streamRef.current) {
