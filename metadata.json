@@ -1,0 +1,8 @@
+{
+  "name": "簡単家計簿",
+  "description": "あなたの支出を記録し、AIがパーソナライズされた節約のヒントを提供することで、効果的な貯金をサポートするインテリジェントな節約アプリケーションです。",
+  "requestFramePermissions": [
+    "camera",
+    "geolocation"
+  ]
+}
