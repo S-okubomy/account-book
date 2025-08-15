@@ -1,5 +1,5 @@
 import { GoogleGenAI, Type } from "@google/genai";
-import { Category } from '../types.ts';
+import { Category, Budgets } from '../types.ts';
 
 let ai;
 let apiKeyError = '';
@@ -20,7 +20,7 @@ try {
 
 const unavailableError = (feature) => `AIによる${feature}機能は現在利用できません。APIキーが正しく設定されていない可能性があります。`;
 
-export async function getSavingsTips(expenses, incomes, currentMonth) {
+export async function getSavingsTips(expenses, incomes, currentMonth, totalSpent, fixedCost, variableCost, budgets: Budgets) {
   if (!ai) {
     console.error(apiKeyError);
     return Promise.resolve(unavailableError("節約のヒント生成"));
@@ -44,23 +44,43 @@ export async function getSavingsTips(expenses, incomes, currentMonth) {
       .join('\n')
     : `この月の収入は記録されていません。`;
 
+  const formattedBudgets = `
+- **全体予算**: ${budgets.overall > 0 ? `${budgets.overall.toLocaleString('ja-JP')}円` : '未設定'}
+- **カテゴリ別予算**:
+${Object.entries(budgets.categories)
+  .filter(([, budget]) => budget > 0)
+  .map(([cat, budget]) => `    - ${cat}: ${budget.toLocaleString('ja-JP')}円`)
+  .join('\n') || '    カテゴリ別の予算は設定されていません。'
+}`;
+
 
   const prompt = `
     あなたは「節約先生」、フレンドリーで、励ましてくれる、鋭いファイナンシャルアドバイザーです。
-    あなたの目標は、ユーザーの収入と消費習慣を分析して、お金を節約するのを助けることです。
+    あなたの目標は、ユーザーの収入と消費習慣、そして設定された【予算】を分析して、お金を節約するのを助けることです。
     批判的または厳しい態度は避けてください。あなたのトーンはポジティブで、元気づけるようなものでなければなりません。
 
-    以下の【${monthString}】の収入と支出のリストに基づき、実行可能でパーソナライズされた節約のヒントを日本語で3〜5個提案してください。
+    以下の【${monthString}】の収入、支出リスト、そして予算設定に基づき、実行可能でパーソナライズされた節約のヒントを日本語で3〜5個提案してください。
     マークダウンのリスト形式で提示してください。フレンドリーな挨拶で始め、励ましの言葉で締めくくってください。
 
     これがユーザーの【${monthString}】の収入データです：
     ${formattedIncomes}
 
     これがユーザーの【${monthString}】の支出データです：
+    - **合計支出**: ${totalSpent.toLocaleString('ja-JP')}円
+    - **固定費**: ${fixedCost.toLocaleString('ja-JP')}円
+    - **変動費**: ${variableCost.toLocaleString('ja-JP')}円
+    
+    **支出詳細**:
     ${formattedExpenses}
 
-    これらの収入と支出のパターンを分析し、具体的で創造的なアドバイスを提供してください。
-    例えば、「食費」の支出が多い場合は、作り置きやスーパーのアプリ活用などの具体的な戦略を提案します。「娯楽」費が高い場合は、無料の地域イベントやサブスクリプションの見直しなどを提案します。収入に対して支出が多い場合は、その点にも優しく触れてください。
+    これがユーザーの【${monthString}】の予算設定です：
+    ${formattedBudgets}
+
+    これらの収入と支出のパターン、そして設定された【予算】と実績を比較分析してください。
+    特に、予算を超過しているカテゴリや、予算に近づいているカテゴリを特定し、それに対する具体的な節約アクションを提案してください。
+    全体予算に対する進捗も考慮に入れ、励ましの言葉とともにアドバイスを提供してください。
+    例えば、「変動費」の割合が高い場合は、どのカテゴリ（食費、娯楽など）を重点的に見直すべきか具体的な戦略を提案します。
+    「固定費」が収入に対して高い場合は、通信プランやサブスクリプションの見直しといった、効果の大きい節約術を提案します。
   `;
 
   try {

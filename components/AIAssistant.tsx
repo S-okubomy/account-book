@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { getSavingsTips } from '../services/geminiService.ts';
 
-export const AIAssistant = ({ expenses, incomes, currentMonth, formatMarkdown }) => {
+export const AIAssistant = ({ expenses, incomes, currentMonth, formatMarkdown, totalSpent, fixedCost, variableCost, budgets }) => {
   const [tips, setTips] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -16,7 +16,7 @@ export const AIAssistant = ({ expenses, incomes, currentMonth, formatMarkdown })
     setError('');
     setTips('');
     try {
-      const result = await getSavingsTips(expenses, incomes, currentMonth);
+      const result = await getSavingsTips(expenses, incomes, currentMonth, totalSpent, fixedCost, variableCost, budgets);
       setTips(result);
     } catch (err) {
       setError('予期せぬエラーが発生しました。');
@@ -24,7 +24,7 @@ export const AIAssistant = ({ expenses, incomes, currentMonth, formatMarkdown })
     } finally {
       setIsLoading(false);
     }
-  }, [expenses, incomes, currentMonth]);
+  }, [expenses, incomes, currentMonth, totalSpent, fixedCost, variableCost, budgets]);
 
   return (
     <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6 h-full">
