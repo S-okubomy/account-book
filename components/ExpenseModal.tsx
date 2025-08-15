@@ -36,15 +36,11 @@ export const ExpenseModal = ({ isOpen, onClose, onSave, expenseToEdit, initialDa
       setError('有効な正の金額を入力してください。');
       return;
     }
-    if (!description.trim()) {
-      setError('内容を入力してください。');
-      return;
-    }
 
     onSave({
       amount: parsedAmount,
       category,
-      description,
+      description: description.trim(),
       date,
     });
     setError('');
@@ -106,8 +102,7 @@ export const ExpenseModal = ({ isOpen, onClose, onSave, expenseToEdit, initialDa
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 className="mt-1 block w-full rounded-md border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white shadow-sm focus:border-teal-500 focus:ring-teal-500 sm:text-sm py-2 px-3"
-                placeholder="例：友人とのコーヒー"
-                required
+                placeholder="例：友人とのコーヒー (任意)"
               />
             </div>
             <div>

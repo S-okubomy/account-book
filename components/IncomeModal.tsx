@@ -28,14 +28,10 @@ export const IncomeModal = ({ isOpen, onClose, onSave, incomeToEdit }) => {
       setError('有効な正の金額を入力してください。');
       return;
     }
-    if (!description.trim()) {
-      setError('内容を入力してください。');
-      return;
-    }
 
     onSave({
       amount: parsedAmount,
-      description,
+      description: description.trim(),
       date,
     });
     setError('');
@@ -83,8 +79,7 @@ export const IncomeModal = ({ isOpen, onClose, onSave, incomeToEdit }) => {
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 className="mt-1 block w-full rounded-md border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm py-2 px-3"
-                placeholder="例：給料"
-                required
+                placeholder="例：給料 (任意)"
               />
             </div>
             <div>
