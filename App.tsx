@@ -6,6 +6,9 @@ import { AIAssistant } from './components/AIAssistant.tsx';
 import { ReceiptScannerModal } from './components/ReceiptScannerModal.tsx';
 import { SalesInfo } from './components/SalesInfo.tsx';
 import { BudgetModal } from './components/BudgetModal.tsx';
+import { RakutenAffiliateWidget } from './components/RakutenAffiliateWidget.tsx';
+import { A8AffiliateWidget } from './components/A8AffiliateWidget.tsx';
+import { AmazonAffiliateWidget } from './components/AmazonAffiliateWidget.tsx';
 import { analyzeReceipt } from './services/geminiService.ts';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import { marked } from 'marked';
@@ -496,7 +499,13 @@ const App = () => {
                 <li>本アプリのデータは、お使いのブラウザ内にのみ保存されます。他のデバイスとの同期はされず、キャッシュを削除するとデータが消えることがあります。</li>
                 <li>レシートの読み取り結果は100%の精度を保証するものではありません。保存前に必ずご自身で内容の確認・修正をお願いします。</li>
                 <li>AIによるヒントの取得やレシート分析機能のご利用には、APIキーの設定とインターネット接続が必要です。</li>
+                <li>本アプリには、運営資金のためのプロモーションが含まれる場合があります。</li>
             </ul>
+            <div className="flex justify-center items-center flex-wrap gap-6 mt-6">
+              <RakutenAffiliateWidget />
+              <A8AffiliateWidget />
+              <AmazonAffiliateWidget />
+            </div>
         </footer>
       </div>
       
