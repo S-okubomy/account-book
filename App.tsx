@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { Category, ExpenseType, CategoryExpenseType, Budgets } from './types.ts';
 import { ExpenseModal } from './components/ExpenseModal.tsx';
 import { IncomeModal } from './components/IncomeModal.tsx';
@@ -6,11 +6,12 @@ import { AIAssistant } from './components/AIAssistant.tsx';
 import { ReceiptScannerModal } from './components/ReceiptScannerModal.tsx';
 import { SalesInfo } from './components/SalesInfo.tsx';
 import { BudgetModal } from './components/BudgetModal.tsx';
+import { ShareModal } from './components/ShareModal.tsx';
 import { RakutenAffiliateWidget } from './components/RakutenAffiliateWidget.tsx';
 import { A8AffiliateWidget } from './components/A8AffiliateWidget.tsx';
 import { AmazonAffiliateWidget } from './components/AmazonAffiliateWidget.tsx';
 import { analyzeReceipt } from './services/geminiService.ts';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { marked } from 'marked';
 
 const App = () => {
@@ -30,8 +31,11 @@ const App = () => {
 
   const [budgets, setBudgets] = useState<Budgets>({ overall: 0, categories: {} });
   const [isBudgetModalOpen, setIsBudgetModalOpen] = useState(false);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
 
   const [activeTab, setActiveTab] = useState('expenses');
+  
+  const chartContainerRef = useRef(null);
 
   useEffect(() => {
     try {
@@ -261,6 +265,24 @@ const App = () => {
     return 'bg-teal-600';
   };
 
+  const shareSummaryText = useMemo(() => {
+    const monthString = `${currentMonth.getFullYear()}年${currentMonth.getMonth() + 1}月`;
+    
+    const top10Expenses = [...monthlyCategoryData]
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 10)
+      .map((item, index) => `${index + 1}. ${item.name}: ${item.value.toLocaleString('ja-JP')}円`)
+      .join('\n');
+
+    return `【${monthString}の家計簿サマリー】\n\n` +
+           `収入: ${monthlyTotalIncome.toLocaleString('ja-JP')}円\n` +
+           `支出: ${monthlyTotalSpent.toLocaleString('ja-JP')}円\n` +
+           `残高: ${monthlyBalance.toLocaleString('ja-JP')}円\n\n` +
+           `--- 支出の内訳 Top 10 ---\n` +
+           `${top10Expenses || '支出はありませんでした。'}\n\n` +
+           `簡単家計簿アプリより`;
+  }, [currentMonth, monthlyTotalIncome, monthlyTotalSpent, monthlyBalance, monthlyCategoryData]);
+
   return (
     <>
       <div className="min-h-screen bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-200 flex flex-col">
@@ -283,16 +305,26 @@ const App = () => {
         </header>
 
         <main className="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
-            <div className="flex items-center justify-center space-x-4 mb-6">
-                <button onClick={handlePreviousMonth} className="p-2 rounded-full text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors" aria-label="前の月">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
-                </button>
-                <h2 className="text-xl font-bold text-slate-700 dark:text-slate-300 w-40 text-center tabular-nums">
-                    {`${currentMonth.getFullYear()}年 ${currentMonth.getMonth() + 1}月`}
-                </h2>
-                <button onClick={handleNextMonth} disabled={isNextMonthDisabled} className="p-2 rounded-full text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors" aria-label="次の月">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
-                </button>
+            <div className="flex items-center justify-center relative mb-6">
+              <div className="flex items-center space-x-4">
+                  <button onClick={handlePreviousMonth} className="p-2 rounded-full text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors" aria-label="前の月">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+                  </button>
+                  <h2 className="text-xl font-bold text-slate-700 dark:text-slate-300 w-40 text-center tabular-nums">
+                      {`${currentMonth.getFullYear()}年 ${currentMonth.getMonth() + 1}月`}
+                  </h2>
+                  <button onClick={handleNextMonth} disabled={isNextMonthDisabled} className="p-2 rounded-full text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors" aria-label="次の月">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                  </button>
+              </div>
+              <div className="absolute right-0">
+                 <button onClick={() => setIsShareModalOpen(true)} className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-slate-600 bg-slate-100 border border-transparent rounded-md hover:bg-slate-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-slate-500 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600" aria-label="共有">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z" />
+                    </svg>
+                    <span>共有</span>
+                 </button>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -459,22 +491,49 @@ const App = () => {
             </div>
             
             <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
-                <div className="lg:col-span-3 bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6">
+                <div className="lg:col-span-3 bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6" ref={chartContainerRef}>
                     <h2 className="text-xl font-bold mb-4">カテゴリ別支出</h2>
                     {monthlyCategoryData.length > 0 ? (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 items-center">
                         <ResponsiveContainer width="100%" height={300}>
                             <PieChart>
-                                <Pie data={monthlyCategoryData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} fill="#8884d8" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
+                                <Pie 
+                                  data={monthlyCategoryData} 
+                                  dataKey="value" 
+                                  nameKey="name" 
+                                  cx="50%" 
+                                  cy="50%" 
+                                  outerRadius={100} 
+                                  fill="#8884d8" 
+                                  labelLine={false}
+                                  label={({ name, percent }) => percent > 0.05 ? `${(percent * 100).toFixed(0)}%` : ''}
+                                >
                                     {monthlyCategoryData.map((entry, index) => (
                                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                                     ))}
                                 </Pie>
                                 <Tooltip formatter={(value) => `${value.toLocaleString('ja-JP')}円`} />
-                                <Legend />
                             </PieChart>
                         </ResponsiveContainer>
+                        <div className="max-h-[300px] overflow-y-auto pr-2">
+                            <ul className="space-y-2 text-sm">
+                                {[...monthlyCategoryData]
+                                    .sort((a, b) => b.value - a.value)
+                                    .map((entry, index) => (
+                                        <li key={`item-${index}`} className="flex justify-between items-center p-2 rounded-md hover:bg-slate-100 dark:hover:bg-slate-700">
+                                            <div className="flex items-center truncate">
+                                                <span className="w-3 h-3 rounded-full mr-3 flex-shrink-0" style={{ backgroundColor: COLORS[index % COLORS.length] }}></span>
+                                                <span className="truncate">{entry.name}</span>
+                                            </div>
+                                            <span className="font-semibold whitespace-nowrap">{entry.value.toLocaleString('ja-JP')}円</span>
+                                        </li>
+                                    ))
+                                }
+                            </ul>
+                        </div>
+                      </div>
                     ) : (
-                        <div className="flex items-center justify-center h-full">
+                        <div className="flex items-center justify-center h-[300px]">
                              <p className="text-slate-500 dark:text-slate-400">この月の支出を追加すると、ここに内訳が表示されます。</p>
                         </div>
                     )}
@@ -608,6 +667,12 @@ const App = () => {
         onClose={() => setIsBudgetModalOpen(false)}
         onSave={handleSaveBudgets}
         currentBudgets={budgets}
+      />
+      <ShareModal
+        isOpen={isShareModalOpen}
+        onClose={() => setIsShareModalOpen(false)}
+        summaryText={shareSummaryText}
+        chartContainerRef={chartContainerRef}
       />
     </>
   );
