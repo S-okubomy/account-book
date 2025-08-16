@@ -6,6 +6,7 @@ export const Category = {
   Car: '自動車費',
   Utilities: '水道光熱費',
   Education: '教育費',
+  Savings: '積立',
   // 変動費
   Food: '食費',
   DailyNecessities: '日用品費',
@@ -30,6 +31,7 @@ export const CategoryExpenseType = {
   [Category.Car]: ExpenseType.Fixed,
   [Category.Utilities]: ExpenseType.Fixed,
   [Category.Education]: ExpenseType.Fixed,
+  [Category.Savings]: ExpenseType.Fixed,
   [Category.Food]: ExpenseType.Variable,
   [Category.DailyNecessities]: ExpenseType.Variable,
   [Category.EatingOut]: ExpenseType.Variable,
@@ -46,4 +48,11 @@ export interface Budgets {
   categories: {
     [category: string]: number;
   };
+}
+
+export interface DefaultFixedCost {
+  id: string;
+  category: string;
+  description: string;
+  amount: number;
 }

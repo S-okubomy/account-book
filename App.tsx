@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { Category, ExpenseType, CategoryExpenseType, Budgets } from './types.ts';
+import { Category, ExpenseType, CategoryExpenseType, Budgets, DefaultFixedCost } from './types.ts';
 import { ExpenseModal } from './components/ExpenseModal.tsx';
 import { IncomeModal } from './components/IncomeModal.tsx';
 import { AIAssistant } from './components/AIAssistant.tsx';
@@ -7,6 +7,8 @@ import { ReceiptScannerModal } from './components/ReceiptScannerModal.tsx';
 import { SalesInfo } from './components/SalesInfo.tsx';
 import { BudgetModal } from './components/BudgetModal.tsx';
 import { ShareModal } from './components/ShareModal.tsx';
+import { DefaultFixedCostsModal } from './components/DefaultFixedCostsModal.tsx';
+import { DefaultFixedCostEditModal } from './components/DefaultFixedCostEditModal.tsx';
 import { RakutenAffiliateWidget } from './components/RakutenAffiliateWidget.tsx';
 import { A8AffiliateWidget } from './components/A8AffiliateWidget.tsx';
 import { AmazonAffiliateWidget } from './components/AmazonAffiliateWidget.tsx';
@@ -15,28 +17,35 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { marked } from 'marked';
 
 const App = () => {
+  // Manual Expenses
   const [expenses, setExpenses] = useState([]);
   const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
   const [expenseToEdit, setExpenseToEdit] = useState(null);
   const [expenseInitialData, setExpenseInitialData] = useState(null);
 
+  // Default Fixed Costs (Templates)
+  const [defaultFixedCosts, setDefaultFixedCosts] = useState<DefaultFixedCost[]>([]);
+  const [isDfcModalOpen, setIsDfcModalOpen] = useState(false);
+  const [isDfcEditModalOpen, setIsDfcEditModalOpen] = useState(false);
+  const [dfcToEdit, setDfcToEdit] = useState(null);
+
+  // Incomes
   const [incomes, setIncomes] = useState([]);
   const [isIncomeModalOpen, setIsIncomeModalOpen] = useState(false);
   const [incomeToEdit, setIncomeToEdit] = useState(null);
 
+  // Other Modals & UI State
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [isProcessingReceipt, setIsProcessingReceipt] = useState(false);
-  
   const [currentMonth, setCurrentMonth] = useState(new Date());
-
   const [budgets, setBudgets] = useState<Budgets>({ overall: 0, categories: {} });
   const [isBudgetModalOpen, setIsBudgetModalOpen] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
-
   const [activeTab, setActiveTab] = useState('expenses');
   
   const chartContainerRef = useRef(null);
 
+  // --- Data Persistence Effects ---
   useEffect(() => {
     try {
       const storedExpenses = localStorage.getItem('expenses');
@@ -45,35 +54,19 @@ const App = () => {
       if (storedIncomes) setIncomes(JSON.parse(storedIncomes));
       const storedBudgets = localStorage.getItem('budgets');
       if (storedBudgets) setBudgets(JSON.parse(storedBudgets));
+      const storedDfc = localStorage.getItem('defaultFixedCosts');
+      if (storedDfc) setDefaultFixedCosts(JSON.parse(storedDfc));
     } catch (error) {
       console.error("Failed to parse from localStorage", error);
     }
   }, []);
 
-  useEffect(() => {
-    try {
-      localStorage.setItem('expenses', JSON.stringify(expenses));
-    } catch (error) {
-      console.error("Failed to save expenses to localStorage", error);
-    }
-  }, [expenses]);
+  useEffect(() => { localStorage.setItem('expenses', JSON.stringify(expenses)); }, [expenses]);
+  useEffect(() => { localStorage.setItem('incomes', JSON.stringify(incomes)); }, [incomes]);
+  useEffect(() => { localStorage.setItem('budgets', JSON.stringify(budgets)); }, [budgets]);
+  useEffect(() => { localStorage.setItem('defaultFixedCosts', JSON.stringify(defaultFixedCosts)); }, [defaultFixedCosts]);
 
-  useEffect(() => {
-    try {
-      localStorage.setItem('incomes', JSON.stringify(incomes));
-    } catch (error) {
-      console.error("Failed to save incomes to localStorage", error);
-    }
-  }, [incomes]);
-
-  useEffect(() => {
-    try {
-        localStorage.setItem('budgets', JSON.stringify(budgets));
-    } catch (error) {
-        console.error("Failed to save budgets to localStorage", error);
-    }
-  }, [budgets]);
-
+  // --- Manual Expense Handlers ---
   const handleAddExpense = useCallback((expenseData) => {
     const newExpense = { ...expenseData, id: new Date().getTime().toString() };
     setExpenses(prev => [...prev, newExpense].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
@@ -105,6 +98,33 @@ const App = () => {
     setExpenseToEdit(null);
   }
 
+  // --- Default Fixed Cost Handlers ---
+  const handleSaveDfc = useCallback((dfcData) => {
+    if (dfcToEdit) {
+      setDefaultFixedCosts(prev => prev.map(item => item.id === dfcToEdit.id ? { ...item, ...dfcData } : item));
+    } else {
+      const newItem = { ...dfcData, id: new Date().getTime().toString() };
+      setDefaultFixedCosts(prev => [...prev, newItem]);
+    }
+    setDfcToEdit(null);
+  }, [dfcToEdit]);
+
+  const handleDeleteDfc = useCallback((id) => {
+    setDefaultFixedCosts(prev => prev.filter(item => item.id !== id));
+  }, []);
+  
+  const openAddDfcModal = () => {
+    setDfcToEdit(null);
+    setIsDfcEditModalOpen(true);
+  };
+
+  const openEditDfcModal = (item) => {
+    setDfcToEdit(item);
+    setIsDfcEditModalOpen(true);
+  };
+
+
+  // --- Income Handlers ---
   const handleAddIncome = useCallback((incomeData) => {
     const newIncome = { ...incomeData, id: new Date().getTime().toString() };
     setIncomes(prev => [...prev, newIncome].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
@@ -129,6 +149,7 @@ const App = () => {
     setIsIncomeModalOpen(true);
   };
 
+  // --- Other Handlers ---
   const handleReceiptCapture = useCallback(async (imageData) => {
     setIsProcessingReceipt(true);
     try {
@@ -153,21 +174,10 @@ const App = () => {
     setCurrentMonth(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
   }, []);
   
-  const handleFabAddExpense = () => {
-    openAddExpenseModal();
-  };
-
-  const handleFabScanReceipt = () => {
-    setIsScannerOpen(true);
-  };
-
-  const handleFabAddIncome = () => {
-    openAddIncomeModal();
-  };
-  
-  const handleSaveBudgets = useCallback((newBudgets) => {
-    setBudgets(newBudgets);
-  }, []);
+  const handleFabAddExpense = () => openAddExpenseModal();
+  const handleFabScanReceipt = () => setIsScannerOpen(true);
+  const handleFabAddIncome = () => openAddIncomeModal();
+  const handleSaveBudgets = useCallback((newBudgets) => { setBudgets(newBudgets); }, []);
 
 
   const isNextMonthDisabled = useMemo(() => {
@@ -177,23 +187,34 @@ const App = () => {
     return currentSelectedMonthStart.getTime() >= thisActualMonthStart.getTime();
   }, [currentMonth]);
 
-
+  // --- Main Calculation Memo ---
   const { monthlyExpenses, monthlyIncomes, monthlyTotalSpent, monthlyTotalIncome, monthlyBalance, monthlyCategoryData, monthlyFixedCost, monthlyVariableCost, categoryMap } = useMemo(() => {
     const startOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
     const endOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0);
     endOfMonth.setHours(23, 59, 59, 999);
-
-    const filteredExpenses = expenses.filter(expense => {
+    
+    // 1. Manually entered expenses for the month
+    const manualExpenses = expenses.filter(expense => {
         const expenseDate = new Date(expense.date);
         return expenseDate >= startOfMonth && expenseDate <= endOfMonth;
     });
+
+    // 2. Automatically generated fixed costs for the month
+    const autoFixedExpenses = defaultFixedCosts.map(dfc => ({
+        ...dfc,
+        id: `dfc-${dfc.id}`, // Unique key for rendering
+        date: startOfMonth.toISOString().split('T')[0], // Assign to the first day of the month
+        isDefault: true, // Flag to identify these in the UI
+    }));
+    
+    const allExpensesForMonth = [...manualExpenses, ...autoFixedExpenses].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
     const filteredIncomes = incomes.filter(income => {
         const incomeDate = new Date(income.date);
         return incomeDate >= startOfMonth && incomeDate <= endOfMonth;
     });
 
-    const totalSpent = filteredExpenses.reduce((sum, expense) => sum + expense.amount, 0);
+    const totalSpent = allExpensesForMonth.reduce((sum, expense) => sum + expense.amount, 0);
     const totalIncome = filteredIncomes.reduce((sum, income) => sum + income.amount, 0);
     const balance = totalIncome - totalSpent;
 
@@ -201,7 +222,7 @@ const App = () => {
     let fixedCost = 0;
     let variableCost = 0;
 
-    filteredExpenses.forEach(expense => {
+    allExpensesForMonth.forEach(expense => {
       const currentAmount = categoryMap.get(expense.category) || 0;
       categoryMap.set(expense.category, currentAmount + expense.amount);
       
@@ -214,7 +235,7 @@ const App = () => {
     const categoryData = Array.from(categoryMap, ([name, value]) => ({ name, value }));
 
     return { 
-        monthlyExpenses: filteredExpenses,
+        monthlyExpenses: allExpensesForMonth,
         monthlyIncomes: filteredIncomes,
         monthlyTotalSpent: totalSpent,
         monthlyTotalIncome: totalIncome,
@@ -224,7 +245,7 @@ const App = () => {
         monthlyVariableCost: variableCost,
         categoryMap: categoryMap,
     };
-  }, [expenses, incomes, currentMonth]);
+  }, [expenses, incomes, currentMonth, defaultFixedCosts]);
   
   const COLORS = ['#0d9488', '#0891b2', '#0284c7', '#2563eb', '#4f46e5', '#7c3aed', '#9333ea', '#c026d3', '#db2777', '#e11d48', '#dc2626', '#ea580c', '#ca8a04', '#65a30d', '#16a34a'];
 
@@ -236,6 +257,7 @@ const App = () => {
     [Category.Car]: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M8 16.5a1.5 1.5 0 100-3 1.5 1.5 0 000 3zM15 15a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z" /><path d="M3 4a1 1 0 00-1 1v10a1 1 0 001 1h1.05a2.5 2.5 0 014.9 0H10a1 1 0 001-1V5a1 1 0 00-1-1H3zM6 16.5a1.5 1.5 0 100-3 1.5 1.5 0 000 3zM11 5v2h3V5h-3z" /><path d="M11 8v2h3V8h-3z" /><path d="M15 5a1 1 0 00-1 1v7a1 1 0 001 1h2a1 1 0 001-1V6a1 1 0 00-1-1h-2z" /></svg>,
     [Category.Utilities]: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clipRule="evenodd" /></svg>,
     [Category.Education]: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L9 9.41V13a1 1 0 00-1 1v2a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 00-1-1v-3.59l6.606-2.47a1 1 0 000-1.84l-7-3zM9 13.5l-6-2.25L9 9l6 2.25L9 13.5z" /></svg>,
+    [Category.Savings]: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M2 6a2 2 0 012-2h12a2 2 0 012 2v2a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM2 12a2 2 0 012-2h12a2 2 0 012 2v2a2 2 0 01-2 2H4a2 2 0 01-2-2v-2z" /></svg>,
     // Variable
     [Category.Food]: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M18.333 7.825c0-3.321-2.612-4.25-3.083-4.325a.833.833 0 00-.917.917c.017.25.167.833.167 1.417 0 .583-.15 1.167-.167 1.417a.833.833 0 00.917.917c.471-.075 3.083-1 3.083-4.325zM1.667 7.825c0-3.321 2.612-4.25 3.083-4.325a.833.833 0 01.917.917c-.017.25-.167.833-.167 1.417 0 .583.15 1.167.167 1.417a.833.833 0 01-.917.917C4.279 8.825 1.667 8.825 1.667 7.825z" /><path fillRule="evenodd" d="M10 2a8 8 0 100 16 8 8 0 000-16zM5.885 6.512a.833.833 0 01.954-.616c.38.117.953.334 1.542.334s1.162-.217 1.542-.334a.833.833 0 11.568 1.232c-.471.217-.953.488-1.722.488s-1.251-.271-1.722-.488a.833.833 0 01-.662-1.048zM14 11.5a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" /></svg>,
     [Category.DailyNecessities]: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M3 1a1 1 0 000 2h1.22l.305 1.222a.997.997 0 00.01.042l1.358 5.43-.893.892C3.74 11.846 4.632 14 6.414 14H15a1 1 0 000-2H6.414l1-1H14a1 1 0 00.894-.553l3-6A1 1 0 0017 3H6.28l-.31-1.243A1 1 0 005 1H3zM16 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM6.5 18a1.5 1.5 0 100-3 1.5 1.5 0 000 3z" /></svg>,
@@ -295,12 +317,20 @@ const App = () => {
                 </svg>
                 <h1 className="text-2xl font-bold text-slate-900 dark:text-white">簡単家計簿</h1>
             </div>
-            <button
-              onClick={() => setIsBudgetModalOpen(true)}
-              className="px-4 py-2 text-sm font-medium text-white bg-slate-600 border border-transparent rounded-md shadow-sm hover:bg-slate-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-slate-500"
-            >
-              予算設定
-            </button>
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={() => setIsDfcModalOpen(true)}
+                className="px-4 py-2 text-sm font-medium text-slate-700 bg-slate-100 border border-transparent rounded-md hover:bg-slate-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-slate-500 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600"
+              >
+                固定費設定
+              </button>
+              <button
+                onClick={() => setIsBudgetModalOpen(true)}
+                className="px-4 py-2 text-sm font-medium text-white bg-slate-600 border border-transparent rounded-md shadow-sm hover:bg-slate-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-slate-500"
+              >
+                予算設定
+              </button>
+            </div>
           </div>
         </header>
 
@@ -401,8 +431,16 @@ const App = () => {
                             </div>
                             <div className='flex items-center space-x-4'>
                                 <p className="font-semibold text-base text-red-500">-{expense.amount.toLocaleString('ja-JP')}円</p>
-                                <button onClick={() => openEditExpenseModal(expense)} className="text-slate-400 hover:text-blue-500 dark:hover:text-blue-400"><svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" /><path fillRule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clipRule="evenodd" /></svg></button>
-                                <button onClick={() => handleDeleteExpense(expense.id)} className="text-slate-400 hover:text-red-500 dark:hover:text-red-400"><svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" /></svg></button>
+                                {expense.isDefault ? (
+                                    <span title="自動計上された固定費" className="text-slate-400 dark:text-slate-500">
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 3a1 1 0 011 1v.268l1.984 1.145a1 1 0 01.516.868v7.438a1 1 0 01-.516.868L11 15.732V16a1 1 0 11-2 0v-.268l-1.984-1.145a1 1 0 01-.516-.868V6.28a1 1 0 01.516-.868L9 4.268V4a1 1 0 011-1z" clipRule="evenodd" /></svg>
+                                    </span>
+                                ) : (
+                                <>
+                                    <button onClick={() => openEditExpenseModal(expense)} className="text-slate-400 hover:text-blue-500 dark:hover:text-blue-400"><svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" /><path fillRule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clipRule="evenodd" /></svg></button>
+                                    <button onClick={() => handleDeleteExpense(expense.id)} className="text-slate-400 hover:text-red-500 dark:hover:text-red-400"><svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" /></svg></button>
+                                </>
+                                )}
                             </div>
                             </li>
                         ))}
@@ -673,6 +711,21 @@ const App = () => {
         onClose={() => setIsShareModalOpen(false)}
         summaryText={shareSummaryText}
         chartContainerRef={chartContainerRef}
+      />
+      <DefaultFixedCostsModal
+        isOpen={isDfcModalOpen}
+        onClose={() => setIsDfcModalOpen(false)}
+        onEdit={openEditDfcModal}
+        onDelete={handleDeleteDfc}
+        onAddNew={openAddDfcModal}
+        defaultFixedCosts={defaultFixedCosts}
+        categoryIcons={categoryIcons}
+      />
+      <DefaultFixedCostEditModal
+        isOpen={isDfcEditModalOpen}
+        onClose={() => setIsDfcEditModalOpen(false)}
+        onSave={handleSaveDfc}
+        itemToEdit={dfcToEdit}
       />
     </>
   );

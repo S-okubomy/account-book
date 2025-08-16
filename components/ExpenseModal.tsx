@@ -1,12 +1,25 @@
-import React, { useState, useEffect } from 'react';
-import { Category } from '../types.ts';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Category, CategoryExpenseType, ExpenseType } from '../types.ts';
+
+const variableCategories = Object.keys(Category)
+  .filter(key => CategoryExpenseType[Category[key]] === ExpenseType.Variable)
+  .map(key => Category[key]);
 
 export const ExpenseModal = ({ isOpen, onClose, onSave, expenseToEdit, initialData }) => {
   const [amount, setAmount] = useState('');
-  const [category, setCategory] = useState(Category.Food);
+  const [category, setCategory] = useState(variableCategories[0]);
   const [description, setDescription] = useState('');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [error, setError] = useState('');
+
+  const categoryOptions = useMemo(() => {
+    if (expenseToEdit && CategoryExpenseType[expenseToEdit.category] === ExpenseType.Fixed) {
+      // If editing a fixed cost item, include it in the options so it doesn't disappear.
+      // This is a legacy case, new fixed costs cannot be added here.
+      return [expenseToEdit.category, ...variableCategories];
+    }
+    return variableCategories;
+  }, [expenseToEdit]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -18,9 +31,12 @@ export const ExpenseModal = ({ isOpen, onClose, onSave, expenseToEdit, initialDa
       setDate(expenseToEdit.date);
       setError('');
     } else {
-      // Pre-fill with initial data if available, otherwise reset
       setAmount(String(initialData?.amount || ''));
-      setCategory(initialData?.category || Category.Food);
+      // Ensure the category is a valid variable one.
+      const initialCategory = initialData?.category && variableCategories.includes(initialData.category)
+        ? initialData.category
+        : variableCategories[0];
+      setCategory(initialCategory);
       setDescription(initialData?.description || '');
       setDate(initialData?.date || new Date().toISOString().split('T')[0]);
       setError('');
@@ -88,7 +104,7 @@ export const ExpenseModal = ({ isOpen, onClose, onSave, expenseToEdit, initialDa
                 onChange={(e) => setCategory(e.target.value)}
                 className="mt-1 block w-full rounded-md border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white py-2 pl-3 pr-10 text-base focus:border-teal-500 focus:outline-none focus:ring-teal-500 sm:text-sm"
               >
-                {Object.values(Category).map(cat => (
+                {categoryOptions.map(cat => (
                   <option key={cat} value={cat}>{cat}</option>
                 ))}
               </select>
