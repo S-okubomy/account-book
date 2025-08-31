@@ -12,7 +12,8 @@
 
 以下のリンクからアプリケーションを直接お試しいただけます。
 
-[https://service-938981889.us-west1.run.app/](https://service-938981889.us-west1.run.app/)
+[https://service-938981889.us-west1.run.app/](https://service-938981889.us-west1.run.app/)  
+※試作版のため、生成AI機能は停止しております。
 
 ## ✨ 主な機能
 
@@ -52,6 +53,7 @@
 
 ### 前提条件
 
+※試作版のため、生成AI機能は停止しております。
 - [Google Gemini APIキー](https://ai.google.dev/pricing)
 - ローカルWebサーバー (例: [http-server](https://www.npmjs.com/package/http-server))
 
